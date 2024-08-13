@@ -1,25 +1,25 @@
-    from flask import Flask, request
-    from selenium import webdriver
-    from selenium.webdriver.chrome.service import Service as ChromeService
-    from selenium.webdriver.common.by import By
-    from selenium.common.exceptions import NoSuchElementException
-    import time
+from flask import Flask, request
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+import time
 
-    app = Flask(__name__)
+app = Flask(__name__)
 
-    @app.route('/')
-    def index():
-        return '''
-            <form action="/login" method="post">
-                <label for="url">URL:</label>
-                <input type="text" id="url" name="url"><br>
-                <label for="email">Email:</label>
-                <input type="text" id="email" name="email"><br>
+@app.route('/')
+def index():
+    return '''
+        <form action="/login" method="post">
+            <label for="url">URL:</label>
+            <input type="text" id="url" name="url"><br>
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email"><br>
                 <label for="password">Password:</label>
-                <input type="password" id="password" name="password"><br>
+            <input type="password" id="password" name="password"><br>
                 <input type="submit" value="Submit">
-            </form>
-        '''
+        </form>
+    '''
 
     @app.route('/login', methods=['POST'])
     def login():
@@ -84,5 +84,5 @@
         finally:
             driver.quit()
 
-    if __name__ == '__main__':
-        app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
