@@ -24,7 +24,7 @@ Before running the project, make sure you have the following installed on your m
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/Logger2139.git
+   git clone https://github.com/hamdan504/Auto-Login2139.git
    cd Logger2139
 
 2. **Install Required Python Packages**:
