@@ -25,19 +25,17 @@ Before running the project, make sure you have the following installed on your m
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/hamdan504/Auto-Login2139.git
-   cd Logger2139
+
 
 2. **Install Required Python Packages**:
 Install the necessary packages using pip:
 
   ```bash
-  Copy code
   pip install -r requirements.txt
   ```
 If there is no requirements.txt file, install Flask and Selenium manually:
   
   ```bash
-  Copy code
   pip install Flask selenium
   ```
 
@@ -49,9 +47,10 @@ To run the Flask application:
 
 Run the Flask App:
 
-bash
-Copy code
-python app.py
+   ```bash
+   python app.py
+   ```
+
 Access the App:
 
 4.**Open your web browser and go to http://127.0.0.1:5000/**.
