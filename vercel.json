@@ -7,10 +7,6 @@
       "config": {
         "maxLambdaSize": "50mb"
       }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
     }
   ],
   "routes": [
@@ -19,10 +15,9 @@
       "dest": "/app.py"
     }
   ],
-  "env": {
-    "PLAYWRIGHT_BROWSERS_PATH": "0"
-  },
-  "installCommand": "pnpm install && pnpm playwright install",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "public"
+  "build": {
+    "env": {
+      "VERCEL_ENV": "production"
+    }
+  }
 }
