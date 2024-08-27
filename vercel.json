@@ -1,9 +1,21 @@
 {
-    "builds": [
-      { "src": "app.py", "use": "@vercel/python" }
-    ],
-    "routes": [
-      { "src": "/(.*)", "dest": "app.py" }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python",
+      "config": { "buildCommand": "bash build.sh" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "build": {
+    "env": {
+      "PIP_EXTRA_INDEX_URL": "https://playwright.jfrog.io/artifactory/api/pypi/playwright/simple/"
+    }
   }
-  
+}

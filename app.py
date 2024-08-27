@@ -1,9 +1,7 @@
 from flask import Flask, request
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import time
+import os
 
 app = Flask(__name__)
 
@@ -26,63 +24,71 @@ def login():
     url = request.form['url']
     email = request.form['email']
     password = request.form['password']
-    
-    chrome_driver_path = ".wdm\chromedriver-win64\chromedriver.exe"
-    
-    options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
 
-    try:
-        driver = webdriver.Chrome(service=ChromeService(executable_path=chrome_driver_path), options=options)
-        driver.get(url)
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)  # Set to True for production
+        context = browser.new_context()
+        page = context.new_page()
         
-        email_login_button = driver.find_element(By.XPATH, "//div[contains(text(), 'Email')]")
-        email_login_button.click()
+        # Start tracing
+        context.tracing.start(screenshots=True, snapshots=True, sources=True)
         
-        email_field = driver.find_element(By.CSS_SELECTOR, "input[type='text'][placeholder='Please enter your email address']")
-        email_field.send_keys(email)
-        
-        password_field = driver.find_element(By.CSS_SELECTOR, "input[type='password'][placeholder='Please enter your password']")
-        password_field.send_keys(password)
-        
-        login_button = driver.find_element(By.CSS_SELECTOR, "div.login-btn")
-        login_button.click()
-        time.sleep(2)
-        
-        # Check if the user is logged in by looking for an element that's only present when logged in
-        if driver.current_url != url:
-            trade_url = "https://2139.online/pc/#/contractTransaction"
-            driver.get(trade_url)
-            time.sleep(1)
+        try:
+            page.goto(url, wait_until="networkidle", timeout=60000)
             
-            invited_me_button = driver.find_element(By.XPATH, "//div[contains(text(), 'invited me')]")
-            invited_me_button.click()
-            time.sleep(3)
+            # Wait for and click the "Email" button
+            page.wait_for_selector("div.choose-btn:text('Email')", timeout=30000)
+            page.click("div.choose-btn:text('Email')")
 
+            # Fill in the email
+            email_input = page.wait_for_selector("input[type='text'][placeholder='Please enter your email address']", timeout=30000)
+            email_input.fill(email)
 
-            try:
-                confirm_order = driver.find_element(By.XPATH, "//div[contains(text(), ' Confirm to follow the order')]")
-                confirm_order.click()
-                time.sleep(3)
+            # Fill in the password
+            password_input = page.wait_for_selector("input[type='password'][placeholder='Please enter your password']", timeout=30000)
+            password_input.fill(password)
 
-                confirm_button = driver.find_element(By.XPATH, "//button/span[contains(text(), 'Confirm')]")
-                confirm_button.click()
-                time.sleep(50)
-                return "Successfully completed the transaction!"
-                        
-            except NoSuchElementException:
-                # If the "confirm order" button is not found, wait before closing
-                time.sleep(50)
-                return "No transaction found or buttons were not available."
-                        
-        else:
-            return "Login failed or session not maintained properly."
+            # Click the login button
+            page.click("div.login-btn")
 
-    except Exception as e:
-        return f"Error: {e}"
+            # Wait for navigation or a specific element that indicates successful login
+            page.wait_for_load_state('networkidle', timeout=30000)
 
-    finally:
-        driver.quit()
+            # Check if login was successful (you might need to adjust this check)
+            if page.url != url:
+                # If login successful, perform additional actions
+                trade_url = "https://2139.online/pc/#/contractTransaction"
+                page.goto(trade_url, wait_until="networkidle", timeout=30000)
+
+                # Click "invited me" button
+                invited_me_button = page.wait_for_selector("div:text('invited me')", timeout=30000)
+                invited_me_button.click()
+                page.wait_for_timeout(3000)
+
+                try:
+                    confirm_order = page.wait_for_selector("div:text(' Confirm to follow the order')", timeout=30000)
+                    confirm_order.click()
+                    page.wait_for_timeout(3000)
+
+                    confirm_button = page.wait_for_selector("button > span:text('Confirm')", timeout=30000)
+                    confirm_button.click()
+                    page.wait_for_timeout(50000)
+                    return "Successfully completed the transaction!"
+
+                except PlaywrightTimeoutError:
+                    return "No transaction found or buttons were not available."
+
+            else:
+                return "Login may have failed. Please check the credentials."
+
+        except PlaywrightTimeoutError as e:
+            return f"Timeout error: {str(e)}"
+        except Exception as e:
+            return f"Error: {str(e)}"
+        finally:
+            # Stop tracing and save the file
+            context.tracing.stop(path="trace.zip")
+            browser.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
