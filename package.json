@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Flask application for login automation using Playwright",
   "scripts": {
-    "vercel-build": "sh build.sh"
+    "vercel-build": "sh build.sh",
+    "postinstall": "playwright install chromium"
   },
   "dependencies": {
     "playwright": "^1.46.0"
