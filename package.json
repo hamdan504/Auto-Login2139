@@ -4,7 +4,7 @@
   "description": "Flask application for login automation using Playwright",
   "scripts": {
     "vercel-build": "sh build.sh",
-    "postinstall": "npx playwright install"
+    "postinstall": "playwright install chromium"
 
   },
   "dependencies": {

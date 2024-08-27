@@ -37,7 +37,7 @@ def login():
 
     with sync_playwright() as p:
         browser_type = p.chromium
-        browser_args = []
+        browser_args = ['--no-sandbox', '--disable-gpu']
         is_vercel = os.environ.get('VERCEL_ENV')
         
         if is_vercel:
