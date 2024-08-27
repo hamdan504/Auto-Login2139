@@ -62,4 +62,3 @@ Error: Chromedriver executable needs to be in PATH:
 Ensure the chrome_driver_path in the code points to the correct location of your ChromeDriver executable.
 Selenium version mismatch:
 Make sure your Selenium version is compatible with your ChromeDriver and Chrome browser versions.
->>>>>>> refs/remotes/origin/main
