@@ -2,16 +2,11 @@
   "name": "flask_internship",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "vercel-build": "pnpm install && pnpm playwright install"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "playwright": "^1.46.0",
-    "pnpm": "^9.7.1"
-  }
+    "playwright": "^1.46.0"
+  },
+  "license": "ISC"
 }

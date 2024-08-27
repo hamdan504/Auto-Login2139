@@ -14,11 +14,5 @@
       "src": "/(.*)",
       "dest": "/app.py"
     }
-  ],
-  "build": {
-    "env": {
-      "VERCEL_ENV": "production"
-    },
-    "command": "pnpm run vercel-build"
-  }
+  ]
 }
