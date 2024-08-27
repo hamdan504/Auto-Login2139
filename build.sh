@@ -5,3 +5,4 @@ pip install --upgrade pip
 pip install -r requirements.txt
 pnpm install
 pnpm playwright install
+playwright install chromium
