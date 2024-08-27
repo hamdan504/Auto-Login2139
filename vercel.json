@@ -18,6 +18,9 @@
   "build": {
     "env": {
       "VERCEL_ENV": "production"
+    },
+    "scripts": {
+      "build": "pnpm run vercel-build"
     }
   }
 }
