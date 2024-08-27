@@ -4,7 +4,10 @@
     {
       "src": "app.py",
       "use": "@vercel/python",
-      "config": { "buildCommand": "bash build.sh" }
+      "config": { 
+        "runtime": "python3.9",
+        "buildCommand": "pip install -r requirements.txt && playwright install chromium"
+      }
     }
   ],
   "routes": [
@@ -13,9 +16,9 @@
       "dest": "app.py"
     }
   ],
-  "build": {
-    "env": {
-      "PIP_EXTRA_INDEX_URL": "https://playwright.jfrog.io/artifactory/api/pypi/playwright/simple/"
-    }
+  "env": {
+    "PIP_TARGET": ".pip_target",
+    "PYTHONPATH": "/var/task/.pip_target",
+    "PLAYWRIGHT_BROWSERS_PATH": "0"
   }
 }

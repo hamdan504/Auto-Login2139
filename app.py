@@ -1,23 +1,33 @@
-from flask import Flask, request
+from flask import Flask, request, render_template_string
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
-import time
 import os
 
 app = Flask(__name__)
 
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Automation</title>
+</head>
+<body>
+    <h1>Login Automation</h1>
+    <form action="/login" method="post">
+        <label for="url">URL:</label>
+        <input type="text" id="url" name="url" required><br><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
+"""
+
 @app.route('/')
 def index():
-    return '''
-        <form action="/login" method="post">
-            <label for="url">URL:</label>
-            <input type="text" id="url" name="url"><br>
-            <label for="email">Email:</label>
-            <input type="text" id="email" name="email"><br>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password"><br>
-            <input type="submit" value="Submit">
-        </form>
-    '''
+    return render_template_string(HTML_TEMPLATE)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -26,12 +36,19 @@ def login():
     password = request.form['password']
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)  # Set to True for production
+        browser_type = p.chromium
+        browser_args = []
+        is_vercel = os.environ.get('VERCEL_ENV')
+        
+        if is_vercel:
+            browser_args.append('--no-sandbox')
+            headless = True
+        else:
+            headless = False  # Show browser locally
+
+        browser = browser_type.launch(headless=headless, args=browser_args)
         context = browser.new_context()
         page = context.new_page()
-        
-        # Start tracing
-        context.tracing.start(screenshots=True, snapshots=True, sources=True)
         
         try:
             page.goto(url, wait_until="networkidle", timeout=60000)
@@ -86,8 +103,8 @@ def login():
         except Exception as e:
             return f"Error: {str(e)}"
         finally:
-            # Stop tracing and save the file
-            context.tracing.stop(path="trace.zip")
+            if not is_vercel:
+                input("Press Enter to close the browser...")
             browser.close()
 
 if __name__ == '__main__':
