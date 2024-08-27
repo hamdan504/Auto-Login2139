@@ -1,19 +1,17 @@
 {
   "name": "flask_internship",
   "version": "1.0.0",
-  "description": "Flask project with Playwright integration",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "playwright install"
+    "vercel-build": "pnpm install && pnpm playwright install"
   },
-  "dependencies": {
-    "playwright": "^1.46"
-  },
-  "keywords": [
-    "flask",
-    "playwright",
-    "automation"
-  ],
+  "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.46.0",
+    "pnpm": "^9.7.1"
+  }
 }
