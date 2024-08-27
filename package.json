@@ -1,14 +1,18 @@
 {
-  "name": "flask_internship",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "vercel-build": "pnpm install && pnpm playwright install"
-  },
-  "dependencies": {
-    "playwright": "^1.46.0"
-  },
-  "license": "ISC"
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/app.py"
+    }
+  ]
 }
