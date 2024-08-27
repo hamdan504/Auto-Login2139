@@ -2,12 +2,11 @@
   "name": "flask_internship",
   "version": "1.0.0",
   "description": "Flask application for login automation using Playwright",
-  "main": "index.js",
   "scripts": {
     "vercel-build": "sh build.sh"
   },
   "dependencies": {
-    "playwright": "^1.46"
+    "playwright": "^1.24.0"
   },
   "license": "ISC"
 }
