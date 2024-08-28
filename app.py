@@ -1,6 +1,6 @@
+import json
 from flask import Flask, request, render_template_string
 import os
-import json
 import logging
 from websocket import create_connection
 from dotenv import load_dotenv
@@ -49,10 +49,7 @@ def login():
     logger.info(f"Attempting login for URL: {url}")
 
     script = f"""
-    const puppeteer = require('puppeteer');
-
-    module.exports = async (browser) => {{
-        const page = await browser.newPage();
+    async (page) => {{
         try {{
             await page.goto('{url}', {{waitUntil: 'networkidle0'}});
 
@@ -94,17 +91,22 @@ def login():
             }}
         }} catch (error) {{
             return `Error: ${{error.message}}`;
-        }} finally {{
-            await page.close();
         }}
-    }};
+    }}
     """
 
-    payload = json.dumps({'code': script, 'context': {}})
+    payload = {
+        "id": 1,  # Unique identifier for the request
+        "method": "session.new",  # Open a new session
+        "params": {
+            "code": script,  # Code to execute
+            "context": {}  # Contextual parameters, if any
+        }
+    }
 
     try:
         ws = create_connection(BROWSERLESS_WS_ENDPOINT)
-        ws.send(payload)
+        ws.send(json.dumps(payload))
         response = ws.recv()
         ws.close()
 
