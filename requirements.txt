@@ -3,3 +3,4 @@ requests==2.26.0
 python-dotenv==0.19.1
 asgiref==3.7.2
 Werkzeug==2.2.2
+websocket-client

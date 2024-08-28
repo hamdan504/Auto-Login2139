@@ -1,8 +1,8 @@
 from flask import Flask, request, render_template_string
-import requests
-import json
 import os
+import json
 import logging
+from websocket import create_connection
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -100,20 +100,16 @@ def login():
     }};
     """
 
-    payload = {
-        'code': script,
-        'context': {},
-    }
+    payload = json.dumps({'code': script, 'context': {}})
 
     try:
-        response = requests.post(BROWSERLESS_WS_ENDPOINT, json=payload)
-        if response.status_code == 200:
-            result = response.json()
-            logger.info(f"Browserless.io response: {result}")
-            return result.get('data', 'No data returned from Browserless.io')
-        else:
-            logger.error(f"Browserless.io error: {response.status_code} - {response.text}")
-            return f"Error: {response.status_code} - {response.text}"
+        ws = create_connection(BROWSERLESS_WS_ENDPOINT)
+        ws.send(payload)
+        response = ws.recv()
+        ws.close()
+
+        logger.info(f"Browserless.io response: {response}")
+        return response
     except Exception as e:
         logger.error(f"Error during Browserless.io request: {str(e)}")
         return f"Error: {str(e)}"
