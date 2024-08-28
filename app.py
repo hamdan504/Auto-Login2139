@@ -42,28 +42,27 @@ def login():
     password = request.form['password']
 
     script = f"""
-    (async () => {{
-        const puppeteer = require('puppeteer');
-        const browser = await puppeteer.launch({{ headless: true }});
+    module.exports = async (browser) => {{
         const page = await browser.newPage();
-        
         await page.goto('{url}', {{waitUntil: 'networkidle0'}});
-        
+
         await page.click("div.choose-btn:text('Email')");
         await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
         await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
         await page.click("div.login-btn");
-        
+
         await page.waitForNavigation({{waitUntil: 'networkidle0'}});
-        
+
         if (page.url() !== '{url}') {{
             await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
+
             await page.click("div:text('invited me')");
             await page.waitForTimeout(3000);
-            
+
             try {{
                 await page.click("div:text(' Confirm to follow the order')");
                 await page.click("button > span:text('Confirm')");
+                await page.waitForTimeout(3000);
                 return "Successfully completed the transaction!";
             }} catch (error) {{
                 return "No transaction found or buttons were not available.";
@@ -71,14 +70,13 @@ def login():
         }} else {{
             return "Login may have failed. Please check the credentials.";
         }}
-        
+
         await browser.close();
-    }})();
+    }};
     """
 
     payload = {
         'code': script,
-        'context': {},
     }
 
     headers = {'Content-Type': 'application/json'}
