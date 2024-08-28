@@ -96,11 +96,11 @@ def login():
     """
 
     payload = {
-        "id": 1,  # Unique identifier for the request
-        "method": "session.new",  # Open a new session
+        "id": 1,
+        "method": "Runtime.evaluate",
         "params": {
-            "code": script,  # Code to execute
-            "context": {}  # Contextual parameters, if any
+            "expression": script,
+            "awaitPromise": True
         }
     }
 
