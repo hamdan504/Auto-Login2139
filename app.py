@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 BROWSERLESS_API_KEY = os.getenv('BROWSERLESS_API_KEY')
-BROWSERLESS_ENDPOINT = f'https://chrome.browserless.io/content?token={BROWSERLESS_API_KEY}'
+BROWSERLESS_ENDPOINT = f'https://chrome.browserless.io/function?token={BROWSERLESS_API_KEY}'
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -49,57 +49,63 @@ def login():
     logger.info(f"Attempting login for URL: {url}")
 
     script = f"""
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto('{url}', {{waitUntil: 'networkidle0'}});
-    
-    await page.waitForSelector("div.choose-btn:text('Email')");
-    await page.click("div.choose-btn:text('Email')");
-    
-    await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']");
-    await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
-    
-    await page.waitForSelector("input[type='password'][placeholder='Please enter your password']");
-    await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
-    
-    await page.click("div.login-btn");
-    
-    await page.waitForNavigation({{waitUntil: 'networkidle0'}});
-    
-    if (page.url() !== '{url}') {{
-        await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
+    module.exports = async ({ page, context }) => {{
+        await page.goto('{url}', {{waitUntil: 'networkidle0'}});
         
-        await page.waitForSelector("div:text('invited me')");
-        await page.click("div:text('invited me')");
-        await page.waitForTimeout(3000);
+        await page.waitForSelector("div.choose-btn:text('Email')");
+        await page.click("div.choose-btn:text('Email')");
         
-        try {{
-            await page.waitForSelector("div:text(' Confirm to follow the order')", {{timeout: 30000}});
-            await page.click("div:text(' Confirm to follow the order')");
+        await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']");
+        await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
+        
+        await page.waitForSelector("input[type='password'][placeholder='Please enter your password']");
+        await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
+        
+        await page.click("div.login-btn");
+        
+        await page.waitForNavigation({{waitUntil: 'networkidle0'}});
+        
+        if (page.url() !== '{url}') {{
+            await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
+            
+            await page.waitForSelector("div:text('invited me')");
+            await page.click("div:text('invited me')");
             await page.waitForTimeout(3000);
             
-            await page.waitForSelector("button > span:text('Confirm')", {{timeout: 30000}});
-            await page.click("button > span:text('Confirm')");
-            await page.waitForTimeout(50000);
-            
-            return "Successfully completed the transaction!";
-        }} catch (error) {{
-            return "No transaction found or buttons were not available.";
+            try {{
+                await page.waitForSelector("div:text(' Confirm to follow the order')", {{timeout: 30000}});
+                await page.click("div:text(' Confirm to follow the order')");
+                await page.waitForTimeout(3000);
+                
+                await page.waitForSelector("button > span:text('Confirm')", {{timeout: 30000}});
+                await page.click("button > span:text('Confirm')");
+                await page.waitForTimeout(50000);
+                
+                return "Successfully completed the transaction!";
+            }} catch (error) {{
+                return "No transaction found or buttons were not available.";
+            }}
+        }} else {{
+            return "Login may have failed. Please check the credentials.";
         }}
-    }} else {{
-        return "Login may have failed. Please check the credentials.";
-    }}
+    }};
     """
 
     payload = {
-        'code': script
+        'code': script,
+        'context': {},
+        'detached': False,
     }
 
     try:
         response = requests.post(BROWSERLESS_ENDPOINT, json=payload)
-        result = response.text
-        logger.info(f"Browserless.io response: {result}")
-        return result
+        if response.status_code == 200:
+            result = response.json()
+            logger.info(f"Browserless.io response: {result}")
+            return result.get('data', 'No data returned from Browserless.io')
+        else:
+            logger.error(f"Browserless.io error: {response.status_code} - {response.text}")
+            return f"Error: {response.status_code} - {response.text}"
     except Exception as e:
         logger.error(f"Error during Browserless.io request: {str(e)}")
         return f"Error: {str(e)}"
