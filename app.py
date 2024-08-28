@@ -49,44 +49,51 @@ def login():
     logger.info(f"Attempting login for URL: {url}")
 
     script = f"""
-    module.exports = async ({ page, context }) => {{
-        await page.goto('{url}', {{waitUntil: 'networkidle0'}});
-        
-        await page.waitForSelector("div.choose-btn:text('Email')");
-        await page.click("div.choose-btn:text('Email')");
-        
-        await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']");
-        await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
-        
-        await page.waitForSelector("input[type='password'][placeholder='Please enter your password']");
-        await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
-        
-        await page.click("div.login-btn");
-        
-        await page.waitForNavigation({{waitUntil: 'networkidle0'}});
-        
-        if (page.url() !== '{url}') {{
-            await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
+    module.exports = async (browser) => {{
+        const page = await browser.newPage();
+        try {{
+            await page.goto('{url}', {{waitUntil: 'networkidle0'}});
             
-            await page.waitForSelector("div:text('invited me')");
-            await page.click("div:text('invited me')");
-            await page.waitForTimeout(3000);
+            await page.waitForSelector("div.choose-btn:text('Email')");
+            await page.click("div.choose-btn:text('Email')");
             
-            try {{
-                await page.waitForSelector("div:text(' Confirm to follow the order')", {{timeout: 30000}});
-                await page.click("div:text(' Confirm to follow the order')");
+            await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']");
+            await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
+            
+            await page.waitForSelector("input[type='password'][placeholder='Please enter your password']");
+            await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
+            
+            await page.click("div.login-btn");
+            
+            await page.waitForNavigation({{waitUntil: 'networkidle0'}});
+            
+            if (page.url() !== '{url}') {{
+                await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
+                
+                await page.waitForSelector("div:text('invited me')");
+                await page.click("div:text('invited me')");
                 await page.waitForTimeout(3000);
                 
-                await page.waitForSelector("button > span:text('Confirm')", {{timeout: 30000}});
-                await page.click("button > span:text('Confirm')");
-                await page.waitForTimeout(50000);
-                
-                return "Successfully completed the transaction!";
-            }} catch (error) {{
-                return "No transaction found or buttons were not available.";
+                try {{
+                    await page.waitForSelector("div:text(' Confirm to follow the order')", {{timeout: 30000}});
+                    await page.click("div:text(' Confirm to follow the order')");
+                    await page.waitForTimeout(3000);
+                    
+                    await page.waitForSelector("button > span:text('Confirm')", {{timeout: 30000}});
+                    await page.click("button > span:text('Confirm')");
+                    await page.waitForTimeout(50000);
+                    
+                    return "Successfully completed the transaction!";
+                }} catch (error) {{
+                    return "No transaction found or buttons were not available.";
+                }}
+            }} else {{
+                return "Login may have failed. Please check the credentials.";
             }}
-        }} else {{
-            return "Login may have failed. Please check the credentials.";
+        }} catch (error) {{
+            return `Error: ${{error.message}}`;
+        }} finally {{
+            await page.close();
         }}
     }};
     """
@@ -94,7 +101,6 @@ def login():
     payload = {
         'code': script,
         'context': {},
-        'detached': False,
     }
 
     try:
