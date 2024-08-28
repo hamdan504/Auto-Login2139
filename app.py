@@ -48,8 +48,6 @@ def login():
     logger.info(f"Attempting login for URL: {url}")
 
     script = f"""
-    const puppeteer = require('puppeteer');
-
     (async () => {{
         const browser = await puppeteer.connect({{
             browserWSEndpoint: 'wss://chrome.browserless.io?token={BROWSERLESS_API_KEY}',
