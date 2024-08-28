@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template_string
 import requests
+import json
 import os
 import logging
 from dotenv import load_dotenv
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 BROWSERLESS_API_KEY = os.getenv('BROWSERLESS_API_KEY')
-BROWSERLESS_ENDPOINT = f'https://chrome.browserless.io/function?token={BROWSERLESS_API_KEY}'
+BROWSERLESS_WS_ENDPOINT = f'wss://chrome.browserless.io?token={BROWSERLESS_API_KEY}'
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -48,11 +49,9 @@ def login():
     logger.info(f"Attempting login for URL: {url}")
 
     script = f"""
-    (async () => {{
-        const browser = await puppeteer.connect({{
-            browserWSEndpoint: 'wss://chrome.browserless.io?token={BROWSERLESS_API_KEY}',
-        }});
+    const puppeteer = require('puppeteer');
 
+    module.exports = async (browser) => {{
         const page = await browser.newPage();
         try {{
             await page.goto('{url}', {{waitUntil: 'networkidle0'}});
@@ -96,9 +95,9 @@ def login():
         }} catch (error) {{
             return `Error: ${{error.message}}`;
         }} finally {{
-            await browser.close();
+            await page.close();
         }}
-    }})();
+    }};
     """
 
     payload = {
@@ -107,7 +106,7 @@ def login():
     }
 
     try:
-        response = requests.post(BROWSERLESS_ENDPOINT, json=payload)
+        response = requests.post(BROWSERLESS_WS_ENDPOINT, json=payload)
         if response.status_code == 200:
             result = response.json()
             logger.info(f"Browserless.io response: {result}")
