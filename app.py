@@ -40,22 +40,12 @@ async def login():
     async with async_playwright() as p:
         browser_type = p.chromium
         browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
-        is_vercel = os.environ.get('VERCEL_ENV')
 
         try:
-            if is_vercel:
-                # Use playwright's built-in browser on Vercel
-                browser = await browser_type.launch(
-                    headless=True,
-                    args=browser_args
-                )
-            else:
-                # Use local browser for development
-                browser = await browser_type.launch(
-                    headless=False,
-                    args=browser_args
-                )
-
+            browser = await browser_type.launch(
+                headless=True,
+                args=browser_args
+            )
             context = await browser.new_context()
             page = await context.new_page()
 
