@@ -3,6 +3,7 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 import os
 import asyncio
 import logging
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,10 +49,15 @@ async def login():
         browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
 
         try:
-            # Use a custom browser path for Vercel environment
-            custom_browser_path = '/tmp/chromium/chrome'
+            # Use the downloaded Chromium binary
+            custom_browser_path = '/tmp/chromium/chrome-linux/chrome'
             logger.info(f"Launching browser with custom path: {custom_browser_path}")
             
+            # Check if the browser executable exists
+            if not os.path.exists(custom_browser_path):
+                logger.error(f"Browser executable not found at {custom_browser_path}")
+                return f"Error: Browser executable not found at {custom_browser_path}"
+
             browser = await browser_type.launch(
                 headless=True,
                 args=browser_args,
@@ -126,7 +132,8 @@ async def login():
             return f"Timeout error: {str(e)}"
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
-            return f"Error: {str(e)}"
+            logger.error(traceback.format_exc())
+            return f"Error: {str(e)}\n\nStacktrace: {traceback.format_exc()}"
         finally:
             if browser:
                 await browser.close()

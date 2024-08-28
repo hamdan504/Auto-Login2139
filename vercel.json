@@ -5,9 +5,8 @@
       "src": "app.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "150mb",
-        "runtime": "python3.9",
-        "buildCommand": "bash build.sh"
+        "maxLambdaSize": "250mb",
+        "runtime": "python3.9"
       }
     }
   ],
