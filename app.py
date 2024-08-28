@@ -1,6 +1,5 @@
-import json
+from flask import Flask, request, jsonify, render_template_string
 import requests
-from flask import Flask, request, render_template_string
 import os
 from dotenv import load_dotenv
 
@@ -9,7 +8,7 @@ load_dotenv()
 app = Flask(__name__)
 
 BROWSERLESS_API_KEY = os.getenv('BROWSERLESS_API_KEY')
-BROWSERLESS_API_URL = f"https://chrome.browserless.io/screenshot?token={BROWSERLESS_API_KEY}"
+BROWSERLESS_ENDPOINT = f"https://chrome.browserless.io/function?token={BROWSERLESS_API_KEY}"
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -43,29 +42,25 @@ def login():
     password = request.form['password']
 
     script = f"""
-    const puppeteer = require('puppeteer-core');
-
     (async () => {{
-        const browser = await puppeteer.connect({{
-            browserWSEndpoint: '{BROWSERLESS_API_URL}'
-        }});
-
+        const puppeteer = require('puppeteer');
+        const browser = await puppeteer.launch({{ headless: true }});
         const page = await browser.newPage();
+        
         await page.goto('{url}', {{waitUntil: 'networkidle0'}});
-
+        
         await page.click("div.choose-btn:text('Email')");
         await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
         await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
         await page.click("div.login-btn");
-
+        
         await page.waitForNavigation({{waitUntil: 'networkidle0'}});
-
+        
         if (page.url() !== '{url}') {{
             await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
-
             await page.click("div:text('invited me')");
             await page.waitForTimeout(3000);
-
+            
             try {{
                 await page.click("div:text(' Confirm to follow the order')");
                 await page.click("button > span:text('Confirm')");
@@ -76,15 +71,26 @@ def login():
         }} else {{
             return "Login may have failed. Please check the credentials.";
         }}
-
+        
         await browser.close();
     }})();
     """
 
-    headers = {'Content-Type': 'application/json'}
-    response = requests.post(BROWSERLESS_API_URL, data=json.dumps({"code": script}), headers=headers)
+    payload = {
+        'code': script,
+        'context': {},
+    }
 
-    return response.text
+    headers = {'Content-Type': 'application/json'}
+    try:
+        response = requests.post(BROWSERLESS_ENDPOINT, json=payload, headers=headers)
+        if response.status_code == 200:
+            result = response.json()
+            return jsonify(result)
+        else:
+            return f"Error: {response.status_code} - {response.text}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 if __name__ == '__main__':
     app.run(debug=True)
