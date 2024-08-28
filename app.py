@@ -26,6 +26,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
+
 @app.route('/')
 async def index():
     return render_template_string(HTML_TEMPLATE)
@@ -38,19 +39,25 @@ async def login():
 
     async with async_playwright() as p:
         browser_type = p.chromium
-        browser_args = ['--no-sandbox', '--disable-gpu']
+        browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
         is_vercel = os.environ.get('VERCEL_ENV')
 
         if is_vercel:
             headless = True
+            executable_path = '/tmp/chromium/chrome'
         else:
-            headless = False  # Show browser locally
-
-        browser = await browser_type.launch(headless=headless, args=browser_args)
-        context = await browser.new_context()
-        page = await context.new_page()
+            headless = False
+            executable_path = None
 
         try:
+            browser = await browser_type.launch(
+                headless=headless,
+                args=browser_args,
+                executable_path=executable_path
+            )
+            context = await browser.new_context()
+            page = await context.new_page()
+
             await page.goto(url, wait_until="networkidle", timeout=60000)
             
             # Wait for and click the "Email" button
