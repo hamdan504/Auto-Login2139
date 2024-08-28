@@ -1,14 +1,19 @@
 from flask import Flask, request, render_template_string
-import asyncio
+import requests
+import json
+import os
 import logging
-import traceback
-from pyppeteer import launch
-from pyppeteer.errors import TimeoutError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+BROWSERLESS_API_KEY = os.getenv('BROWSERLESS_API_KEY')
+BROWSERLESS_ENDPOINT = f'https://chrome.browserless.io/content?token={BROWSERLESS_API_KEY}'
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -32,92 +37,72 @@ HTML_TEMPLATE = """
 """
 
 @app.route('/')
-async def index():
+def index():
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/login', methods=['POST'])
-async def login():
+def login():
     url = request.form['url']
     email = request.form['email']
     password = request.form['password']
 
     logger.info(f"Attempting login for URL: {url}")
 
-    browser = None
-    try:
-        browser = await launch(args=['--no-sandbox', '--disable-setuid-sandbox'])
-        page = await browser.newPage()
-
-        logger.info(f"Navigating to URL: {url}")
-        await page.goto(url, waitUntil='networkidle0', timeout=60000)
+    script = f"""
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto('{url}', {{waitUntil: 'networkidle0'}});
+    
+    await page.waitForSelector("div.choose-btn:text('Email')");
+    await page.click("div.choose-btn:text('Email')");
+    
+    await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']");
+    await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
+    
+    await page.waitForSelector("input[type='password'][placeholder='Please enter your password']");
+    await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
+    
+    await page.click("div.login-btn");
+    
+    await page.waitForNavigation({{waitUntil: 'networkidle0'}});
+    
+    if (page.url() !== '{url}') {{
+        await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0'}});
         
-        # Wait for and click the "Email" button
-        logger.info("Waiting for 'Email' button")
-        await page.waitForSelector("div.choose-btn:text('Email')", timeout=30000)
-        await page.click("div.choose-btn:text('Email')")
+        await page.waitForSelector("div:text('invited me')");
+        await page.click("div:text('invited me')");
+        await page.waitForTimeout(3000);
+        
+        try {{
+            await page.waitForSelector("div:text(' Confirm to follow the order')", {{timeout: 30000}});
+            await page.click("div:text(' Confirm to follow the order')");
+            await page.waitForTimeout(3000);
+            
+            await page.waitForSelector("button > span:text('Confirm')", {{timeout: 30000}});
+            await page.click("button > span:text('Confirm')");
+            await page.waitForTimeout(50000);
+            
+            return "Successfully completed the transaction!";
+        }} catch (error) {{
+            return "No transaction found or buttons were not available.";
+        }}
+    }} else {{
+        return "Login may have failed. Please check the credentials.";
+    }}
+    """
 
-        # Fill in the email
-        logger.info("Filling in email")
-        email_input = await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']", timeout=30000)
-        await email_input.type(email)
+    payload = {
+        'code': script
+    }
 
-        # Fill in the password
-        logger.info("Filling in password")
-        password_input = await page.waitForSelector("input[type='password'][placeholder='Please enter your password']", timeout=30000)
-        await password_input.type(password)
-
-        # Click the login button
-        logger.info("Clicking login button")
-        await page.click("div.login-btn")
-
-        # Wait for navigation or a specific element that indicates successful login
-        logger.info("Waiting for navigation after login")
-        await page.waitForNavigation(timeout=30000)
-
-        # Check if login was successful
-        if page.url != url:
-            logger.info("Login successful, performing additional actions")
-            # If login successful, perform additional actions
-            trade_url = "https://2139.online/pc/#/contractTransaction"
-            await page.goto(trade_url, waitUntil='networkidle0', timeout=30000)
-
-            # Click "invited me" button
-            logger.info("Clicking 'invited me' button")
-            invited_me_button = await page.waitForSelector("div:text('invited me')", timeout=30000)
-            await invited_me_button.click()
-            await page.waitFor(3000)
-
-            try:
-                logger.info("Attempting to confirm order")
-                confirm_order = await page.waitForSelector("div:text(' Confirm to follow the order')", timeout=30000)
-                await confirm_order.click()
-                await page.waitFor(3000)
-
-                confirm_button = await page.waitForSelector("button > span:text('Confirm')", timeout=30000)
-                await confirm_button.click()
-                await page.waitFor(50000)
-                logger.info("Transaction completed successfully")
-                return "Successfully completed the transaction!"
-
-            except TimeoutError:
-                logger.warning("No transaction found or buttons were not available")
-                return "No transaction found or buttons were not available."
-
-        else:
-            logger.warning("Login may have failed")
-            return "Login may have failed. Please check the credentials."
-
-    except TimeoutError as e:
-        logger.error(f"Timeout error: {str(e)}")
-        return f"Timeout error: {str(e)}"
+    try:
+        response = requests.post(BROWSERLESS_ENDPOINT, json=payload)
+        result = response.text
+        logger.info(f"Browserless.io response: {result}")
+        return result
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        logger.error(traceback.format_exc())
-        return f"Error: {str(e)}\n\nStacktrace: {traceback.format_exc()}"
-    finally:
-        if browser:
-            await browser.close()
-            logger.info("Browser closed")
+        logger.error(f"Error during Browserless.io request: {str(e)}")
+        return f"Error: {str(e)}"
 
 if __name__ == '__main__':
     app.run(debug=True)
