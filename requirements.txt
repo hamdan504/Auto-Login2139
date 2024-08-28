@@ -2,5 +2,5 @@ Flask[async]==2.0.1
 playwright==1.46
 greenlet==3.0.3
 asgiref==3.5.2
-
+Werkzeug==2.2.2
 
