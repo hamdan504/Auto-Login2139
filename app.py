@@ -42,7 +42,9 @@ def login():
     password = request.form['password']
 
     script = f"""
-    module.exports = async (browser) => {{
+    module.exports = async ({{
+        browser
+    }}) => {{
         const page = await browser.newPage();
         await page.goto('{url}', {{waitUntil: 'networkidle0'}});
 
