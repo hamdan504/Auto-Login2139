@@ -42,9 +42,13 @@ async def login():
         browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
 
         try:
+            # Use a custom browser path for Vercel environment
+            custom_browser_path = '/tmp/chromium/chrome'
+            
             browser = await browser_type.launch(
                 headless=True,
-                args=browser_args
+                args=browser_args,
+                executable_path=custom_browser_path
             )
             context = await browser.new_context()
             page = await context.new_page()
