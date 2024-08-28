@@ -26,7 +26,6 @@ HTML_TEMPLATE = """
 </html>
 """
 
-
 @app.route('/')
 async def index():
     return render_template_string(HTML_TEMPLATE)
@@ -43,19 +42,20 @@ async def login():
         browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
         is_vercel = os.environ.get('VERCEL_ENV')
 
-        if is_vercel:
-            headless = True
-            executable_path = '/tmp/chromium/chrome'
-        else:
-            headless = False
-            executable_path = None
-
         try:
-            browser = await browser_type.launch(
-                headless=headless,
-                args=browser_args,
-                executable_path=executable_path
-            )
+            if is_vercel:
+                # Use playwright's built-in browser on Vercel
+                browser = await browser_type.launch(
+                    headless=True,
+                    args=browser_args
+                )
+            else:
+                # Use local browser for development
+                browser = await browser_type.launch(
+                    headless=False,
+                    args=browser_args
+                )
+
             context = await browser.new_context()
             page = await context.new_page()
 
