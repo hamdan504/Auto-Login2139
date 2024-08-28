@@ -37,6 +37,7 @@ async def login():
     email = request.form['email']
     password = request.form['password']
 
+    browser = None
     async with async_playwright() as p:
         browser_type = p.chromium
         browser_args = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
@@ -110,9 +111,8 @@ async def login():
         except Exception as e:
             return f"Error: {str(e)}"
         finally:
-            if not is_vercel:
-                input("Press Enter to close the browser...")
-            await browser.close()
-
+            if browser:
+                await browser.close()
+                
 if __name__ == '__main__':
     app.run(debug=True)
