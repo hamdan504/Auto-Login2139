@@ -1,14 +1,8 @@
-from flask import Flask, request, jsonify, render_template_string
-import requests
+from flask import Flask, request, render_template_string
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
-
-BROWSERLESS_API_KEY = os.getenv('BROWSERLESS_API_KEY')
-BROWSERLESS_ENDPOINT = f"https://chrome.browserless.io/function?token={BROWSERLESS_API_KEY}"
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -41,75 +35,77 @@ def login():
     email = request.form['email']
     password = request.form['password']
 
-    script = f"""
-    module.exports = async ({{
-        browser
-    }}) => {{
-        try {{
-            const page = await browser.newPage();
-            await page.goto('{url}', {{waitUntil: 'networkidle0', timeout: 30000}});
-
-            // Wait for and interact with elements
-            await page.waitForSelector("div.choose-btn", {{timeout: 10000}});
-            await page.click("div.choose-btn");
-
-            await page.waitForSelector("input[type='text'][placeholder='Please enter your email address']", {{timeout: 10000}});
-            await page.type("input[type='text'][placeholder='Please enter your email address']", '{email}');
-
-            await page.waitForSelector("input[type='password'][placeholder='Please enter your password']", {{timeout: 10000}});
-            await page.type("input[type='password'][placeholder='Please enter your password']", '{password}');
-
-            await page.click("div.login-btn");
-
-            await page.waitForNavigation({{waitUntil: 'networkidle0', timeout: 30000}});
-
-            if (page.url() !== '{url}') {{
-                await page.goto('https://2139.online/pc/#/contractTransaction', {{waitUntil: 'networkidle0', timeout: 30000}});
-
-                await page.waitForSelector("div", {{timeout: 10000}});
-                await page.click("div:text('invited me')");
-
-                await page.waitForTimeout(3000);
-
-                try {{
-                    await page.waitForSelector("div:contains(' Confirm to follow the order')", {{timeout: 10000}});
-                    await page.click("div:text(' Confirm to follow the order')");
-
-                    await page.waitForSelector("button > span:contains('Confirm')", {{timeout: 10000}});
-                    await page.click("button > span:contains('Confirm')");
-
-                    await page.waitForTimeout(3000);
-                    return "Successfully completed the transaction!";
-                }} catch (error) {{
-                    return "No transaction found or buttons were not available.";
-                }}
-            }} else {{
-                return "Login may have failed. Please check the credentials.";
-            }}
-        }} catch (error) {{
-            console.error('Error:', error.message);
-            return "An error occurred during execution.";
-        }} finally {{
-            await browser.close();
-        }}
-    }};
-    """
-
-
-    payload = {
-        'code': script,
-    }
-
-    headers = {'Content-Type': 'application/json'}
-    try:
-        response = requests.post(BROWSERLESS_ENDPOINT, json=payload, headers=headers)
-        if response.status_code == 200:
-            result = response.json()
-            return jsonify(result)
+    with sync_playwright() as p:
+        browser_type = p.chromium
+        browser_args = []
+        is_vercel = os.environ.get('VERCEL_ENV')
+        
+        if is_vercel:
+            browser_args.append('--no-sandbox')
+            headless = True
         else:
-            return f"Error: {response.status_code} - {response.text}"
-    except Exception as e:
-        return f"Error: {str(e)}"
+            headless = False  
+
+        browser = browser_type.launch(headless=headless, args=browser_args)
+        context = browser.new_context()
+        page = context.new_page()
+        
+        try:
+            page.goto(url, wait_until="networkidle", timeout=60000)
+            
+            # Wait for and click the "Email" button
+            page.wait_for_selector("div.choose-btn:text('Email')", timeout=30000)
+            page.click("div.choose-btn:text('Email')")
+
+            # Fill in the email
+            email_input = page.wait_for_selector("input[type='text'][placeholder='Please enter your email address']", timeout=30000)
+            email_input.fill(email)
+
+            # Fill in the password
+            password_input = page.wait_for_selector("input[type='password'][placeholder='Please enter your password']", timeout=30000)
+            password_input.fill(password)
+
+            # Click the login button
+            page.click("div.login-btn")
+
+            # Wait for navigation or a specific element that indicates successful login
+            page.wait_for_load_state('networkidle', timeout=30000)
+
+            # Check if login was successful (you might need to adjust this check)
+            if page.url != url:
+                # If login successful, perform additional actions
+                trade_url = "https://2139.online/pc/#/contractTransaction"
+                page.goto(trade_url, wait_until="networkidle", timeout=30000)
+
+                # Click "invited me" button
+                invited_me_button = page.wait_for_selector("div:text('invited me')", timeout=30000)
+                invited_me_button.click()
+                page.wait_for_timeout(3000)
+
+                try:
+                    confirm_order = page.wait_for_selector("div:text(' Confirm to follow the order')", timeout=30000)
+                    confirm_order.click()
+                    page.wait_for_timeout(3000)
+
+                    confirm_button = page.wait_for_selector("button > span:text('Confirm')", timeout=30000)
+                    confirm_button.click()
+                    page.wait_for_timeout(50000)
+                    return "Successfully completed the transaction!"
+
+                except PlaywrightTimeoutError:
+                    return "No transaction found or buttons were not available."
+
+            else:
+                return "Login may have failed. Please check the credentials."
+
+        except PlaywrightTimeoutError as e:
+            return f"Timeout error: {str(e)}"
+        except Exception as e:
+            return f"Error: {str(e)}"
+        finally:
+            if not is_vercel:
+                input("Press Enter to close the browser...")
+            browser.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

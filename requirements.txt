@@ -1,6 +1,5 @@
-Flask==2.1.0
-requests==2.26.0
-python-dotenv==0.19.1
-asgiref==3.7.2
+Flask[async]==2.0.1
+playwright==1.46
+greenlet==3.0.3
+asgiref==3.5.2
 Werkzeug==2.2.2
-websocket-client
